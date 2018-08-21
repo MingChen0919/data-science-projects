@@ -1,0 +1,62 @@
+---
+title: "Identification of cancer associated genes using whole genome expression data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data description
+
+Data was downloaded from the gene expression database (https://www.ebi.ac.uk/gxa/experiments/E-GEOD-19249/Downloads): 
+* All the normalized expressions: The original data is a 18307 x 40 matrix. Each row corresponds to a gene. The first three columns are gene ID, gene names and design element, respectively. The rest of columns are assay IDs which correspond to cancer types. 
+* Experiment Design data (tsv)
+
+The data contains normalized gene expression levels for 18307 genes for 37 samples. These 37 samples fall into three categories: lung cancer (7 samples), colon cancer (15 samples) and normal (15 samples).
+
+# Questions
+
+1. Which genes are associated with the cancer types?
+2. Are there any potential to use specific gene expression data to help diagnose early cancer development?
+
+# Methods & Results
+
+## Import libraries
+
+```{r}
+library(plyr) 
+library(NMF) 
+library(tree) 
+library(randomForest) 
+library(MASS) 
+library(glmnet) 
+library(e1071) 
+library(class)
+```
+
+# Data preprocess
+
+## Data clean
+
+We discarded the gene ID and design element columns. We then converted the assay IDs to cancer types and transposed the data matrix to a 37 x 18307 matrix. And then we added a column of cancer types to the data matrix. The final dataset is a 37 x 18308 matrix with rows corresponding to cancer types and columns corresponding to genes. However, the last column is the cancer types and was used as the response variable in our analysis.
+
+```{r}
+# import expressions
+expressions = read.csv("data/E-GEOD-19249-A-AFFY-37-normalized-expressions.tsv", sep="\t", stringsAsFactors = FALSE)
+# import cancer types
+type = read.csv("data/E-GEOD-19249-experiment-design.tsv", sep="\t", stringsAsFactors=F, row.names = 1)[, 2, drop=FALSE]
+type = type[colnames(expressions)[-c(1:3)], ]
+
+# transpose expression data so that rows are samples and columns are genes, each gene is feature.
+X = t(expressions[, -c(1:3)])
+colnames(X) = expressions[, 2] 
+colnames(X) = rownames(expressions)
+
+Y = data.frame(type)
+
+# check predictors and target
+dim(X) # 37 rows and 18207 columns
+dim(Y) # 37 rows and 1 column
+```
+
