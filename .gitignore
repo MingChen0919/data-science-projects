@@ -1,5 +1,6 @@
-# any input folders regardless of where in the directory structure
+# ignore the following folders regardless of where in the directory structure
 input/
+.idea/
 
 # History files
 .Rhistory
