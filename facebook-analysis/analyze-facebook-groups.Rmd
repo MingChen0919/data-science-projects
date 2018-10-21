@@ -1,0 +1,40 @@
+---
+title: "Analyze Facebook Groups"
+---
+
+
+```{r}
+library(httr) # tools for working with URLs and HTTP
+library(ggplot2)
+```
+
+
+# Get Data From Facebook
+## Facebook Access Token
+
+A facebook access token is required to perform this analysis. You can
+go to 'https://developers.facebook.com/tools/explorer' to get your access
+token
+
+```{r}
+# saveRDS('valid_access_token', 'data/fbat.rds')
+access_token = readRDS('data/fbat.rds')
+```
+
+## Facebook Query Function
+
+```{r}
+facebook_graph_api = function(method = list("GET", 'PUT', 'DELETE'), 
+                              url = 'https://graph.facebook.com/',
+                              path, 
+                              access_token) {
+  
+}
+
+url = modify_url('https://graph.facebook.com/', path = '/v3.1/me')
+GET(url = url, query = list(fields='id,name'))
+r = GET(url = url, query = list(fields='id,name', 
+                                access_token=access_token))
+http_status(r)
+```
+

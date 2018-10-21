@@ -127,7 +127,11 @@ $(document).ready(function () {
 
 <div id="data-description" class="section level1">
 <h1>Data description</h1>
-<p>Data was downloaded from the gene expression database: Expression Atlas (data resource: <a href="https://www.ebi.ac.uk/gxa/experiments/E-GEOD-19249/normalized.tsv" class="uri">https://www.ebi.ac.uk/gxa/experiments/E-GEOD-19249/normalized.tsv</a>). The original data is a 18307 x 40 matrix. Each row corresponds to a gene. The first three columns are gene ID, gene names and design element, respectively. The rest of columns are assay IDs which correspond to cancer types. The information about how the assay IDs are matched with cancer types can be obtained here (<a href="https://www.ebi.ac.uk/gxa/experiments/E-GEOD-19249/experiment-design?showOnlyAnalysedRuns=on&amp;accessKey" class="uri">https://www.ebi.ac.uk/gxa/experiments/E-GEOD-19249/experiment-design?showOnlyAnalysedRuns=on&amp;accessKey</a>=&amp;selectedContrast=g4_g3).</p>
+<p>Data was downloaded from the gene expression database (<a href="https://www.ebi.ac.uk/gxa/experiments/E-GEOD-19249/Downloads" class="uri">https://www.ebi.ac.uk/gxa/experiments/E-GEOD-19249/Downloads</a>):</p>
+<ul>
+<li>All the normalized expressions: The original data is a 18307 x 40 matrix. Each row corresponds to a gene. The first three columns are gene ID, gene names and design element, respectively. The rest of columns are assay IDs which correspond to cancer types.</li>
+<li>Experiment Design data (tsv)</li>
+</ul>
 <p>The data contains normalized gene expression levels for 18307 genes for 37 samples. These 37 samples fall into three categories: lung cancer (7 samples), colon cancer (15 samples) and normal (15 samples).</p>
 </div>
 <div id="questions" class="section level1">
@@ -137,11 +141,63 @@ $(document).ready(function () {
 <li>Are there any potential to use specific gene expression data to help diagnose early cancer development?</li>
 </ol>
 </div>
+<div id="methods-results" class="section level1">
+<h1>Methods &amp; Results</h1>
+<div id="import-libraries" class="section level2">
+<h2>Import libraries</h2>
+<pre class="r"><code>library(plyr) 
+library(NMF) 
+library(tree) 
+library(randomForest) 
+library(MASS) 
+library(glmnet) 
+library(e1071) 
+library(class)</code></pre>
+</div>
+</div>
 <div id="data-preprocess" class="section level1">
 <h1>Data preprocess</h1>
 <div id="data-clean" class="section level2">
 <h2>Data clean</h2>
 <p>We discarded the gene ID and design element columns. We then converted the assay IDs to cancer types and transposed the data matrix to a 37 x 18307 matrix. And then we added a column of cancer types to the data matrix. The final dataset is a 37 x 18308 matrix with rows corresponding to cancer types and columns corresponding to genes. However, the last column is the cancer types and was used as the response variable in our analysis.</p>
+<pre class="r"><code># import expressions
+expressions = read.csv(&quot;data/E-GEOD-19249-A-AFFY-37-normalized-expressions.tsv&quot;, sep=&quot;\t&quot;, stringsAsFactors = FALSE)
+# import cancer types
+type = read.csv(&quot;data/E-GEOD-19249-experiment-design.tsv&quot;, sep=&quot;\t&quot;, stringsAsFactors=F, row.names = 1)[, 2, drop=FALSE]
+type = type[colnames(expressions)[-c(1:3)], ]
+
+# transpose expression data so that rows are samples and columns are genes, each gene is feature.
+X = t(expressions[, -c(1:3)])
+colnames(X) = expressions[, 2] 
+colnames(X) = rownames(expressions)
+
+Y = data.frame(type)
+
+# check predictors and target
+dim(X) # 37 rows and 18207 columns</code></pre>
+<pre><code>## [1]    37 18207</code></pre>
+<pre class="r"><code>dim(Y) # 37 rows and 1 column</code></pre>
+<pre><code>## [1] 37  1</code></pre>
+</div>
+<div id="split-data-into-training-and-test-sets" class="section level2">
+<h2>Split data into training and test sets</h2>
+<p>We applied stratified random splitting to the data to get train and test sets.</p>
+<pre class="r"><code>library(caTools)
+train_rows = sample.split(Y$type, SplitRatio = 0.7) 
+X_train = X[train_rows, ]
+X_test = X[!train_rows, ]
+Y_train = Y[train_rows, , drop = FALSE]
+Y_test = Y[!train_rows, , drop = FALSE]</code></pre>
+<p>Cancer type frequency in train set</p>
+<pre class="r"><code>table(Y_train)</code></pre>
+<pre><code>## Y_train
+## colon cancer  lung cancer       normal 
+##           10            5           10</code></pre>
+<p>Cancer type frequency in test set</p>
+<pre class="r"><code>table(Y_test)</code></pre>
+<pre><code>## Y_test
+## colon cancer  lung cancer       normal 
+##            5            2            5</code></pre>
 </div>
 </div>
 
